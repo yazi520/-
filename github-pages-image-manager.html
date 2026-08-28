@@ -112,6 +112,50 @@
             padding: 24px;
         }
 
+        .config-section {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 2px solid #ff9800;
+        }
+
+        .config-section h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #ff6f00;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .config-item {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .config-item label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .config-item input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        .config-item input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
         .upload-section {
             background: white;
             padding: 24px;
@@ -363,6 +407,10 @@
             background: #2196f3;
         }
 
+        .toast.warning {
+            background: #ff9800;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(400px);
@@ -432,6 +480,27 @@
     </div>
 
     <div class="container">
+        <!-- ⚠️ 配置检查 -->
+        <div class="config-section">
+            <h2>⚠️ 必须先配置以下信息</h2>
+            <p style="color: #ff6f00; margin-bottom: 16px; font-size: 14px;">
+                打开浏览器开发者工具（F12），找到下面的代码并修改为你的 GitHub 账户信息，然后刷新页面
+            </p>
+            <div class="config-item">
+                <label>1️⃣ GitHub 用户名（你的 GitHub 账户名）:</label>
+                <input type="text" id="configUsername" placeholder="例如：yazi520" value="">
+            </div>
+            <div class="config-item">
+                <label>2️⃣ 仓库名（你要上传文件的仓库名）:</label>
+                <input type="text" id="configRepository" placeholder="例如：image-bed" value="">
+            </div>
+            <div class="config-item">
+                <label>3️⃣ GitHub Pages 地址（完整 URL）:</label>
+                <input type="text" id="configBaseUrl" placeholder="例如：https://yazi520.github.io/image-bed" value="">
+            </div>
+            <button class="btn btn-secondary" id="applyConfigBtn" style="margin-top: 12px; width: 100%;">✅ 应用配置</button>
+        </div>
+
         <!-- 上传区域 -->
         <div class="upload-section">
             <h2>📁 上传文件</h2>
@@ -452,7 +521,7 @@
                 <div class="empty-state">
                     <div class="empty-state-icon">📭</div>
                     <p>还没有上传任何文件</p>
-                    <p style="font-size: 12px; margin-top: 8px; color: #ccc;">先输入 Token 然后上传文件</p>
+                    <p style="font-size: 12px; margin-top: 8px; color: #ccc;">先配置信息、输入 Token 然后上传文件</p>
                 </div>
             </div>
         </div>
@@ -460,12 +529,11 @@
 
     <script>
         // ==================== 配置信息 ====================
-        // 请修改以下信息为你自己的 GitHub 账户信息
-        const CONFIG = {
-            username: 'yazi520',           // 替换为你的 GitHub 用户名
-            repository: 'main',            // 替换为你的仓库名
+        let CONFIG = {
+            username: localStorage.getItem('config_username') || 'yazi520',
+            repository: localStorage.getItem('config_repository') || 'main',
             branch: 'main',
-            baseUrl: 'https://yazi520.github.io/main'  // 替换为你的 GitHub Pages 地址
+            baseUrl: localStorage.getItem('config_baseUrl') || 'https://yazi520.github.io/main'
         };
 
         // ==================== 存储和状态管理 ====================
@@ -481,8 +549,19 @@
         const progressList = document.getElementById('progressList');
         const gallery = document.getElementById('gallery');
 
+        // 配置相关
+        const configUsername = document.getElementById('configUsername');
+        const configRepository = document.getElementById('configRepository');
+        const configBaseUrl = document.getElementById('configBaseUrl');
+        const applyConfigBtn = document.getElementById('applyConfigBtn');
+
         // ==================== 初始化 ====================
         function init() {
+            // 加载配置
+            configUsername.value = CONFIG.username;
+            configRepository.value = CONFIG.repository;
+            configBaseUrl.value = CONFIG.baseUrl;
+
             if (token) {
                 tokenInput.value = token;
             }
@@ -495,6 +574,8 @@
             tokenInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') saveToken();
             });
+
+            applyConfigBtn.addEventListener('click', applyConfig);
             
             uploadArea.addEventListener('click', () => fileInput.click());
             uploadArea.addEventListener('dragover', (e) => {
@@ -516,6 +597,29 @@
             });
             
             refreshBtn.addEventListener('click', loadFiles);
+        }
+
+        // ==================== 配置管理 ====================
+        function applyConfig() {
+            const username = configUsername.value.trim();
+            const repository = configRepository.value.trim();
+            const baseUrl = configBaseUrl.value.trim();
+
+            if (!username || !repository || !baseUrl) {
+                showToast('请填写完整的配置信息', 'error');
+                return;
+            }
+
+            CONFIG.username = username;
+            CONFIG.repository = repository;
+            CONFIG.baseUrl = baseUrl;
+
+            localStorage.setItem('config_username', username);
+            localStorage.setItem('config_repository', repository);
+            localStorage.setItem('config_baseUrl', baseUrl);
+
+            showToast('配置已保存！', 'success');
+            loadFiles();
         }
 
         // ==================== Token 管理 ====================
@@ -632,28 +736,47 @@
         // ==================== 加载文件列表 ====================
         async function loadFiles() {
             if (!token) {
-                showToast('请先输入 GitHub Token', 'error');
+                showToast('请先输入 GitHub Token', 'warning');
+                return;
+            }
+
+            if (CONFIG.username === 'yazi520' && CONFIG.repository === 'main') {
+                showToast('⚠️ 请先修改配置中的用户名和仓库名！', 'warning');
                 return;
             }
 
             try {
                 const url = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repository}/contents?ref=${CONFIG.branch}`;
+                console.log('Loading from:', url);
+                
                 const response = await fetch(url, {
                     headers: {
                         'Authorization': `token ${token}`
                     }
                 });
 
+                console.log('Response status:', response.status);
+
                 if (!response.ok) {
-                    throw new Error('无法加载文件列表');
+                    const errorData = await response.json();
+                    console.log('Error response:', errorData);
+                    
+                    if (response.status === 404) {
+                        throw new Error(`仓库不存在或无权限访问 (${CONFIG.username}/${CONFIG.repository})`);
+                    } else if (response.status === 401) {
+                        throw new Error('Token 无效或已过期，请重新输入');
+                    } else {
+                        throw new Error(errorData.message || `加载失败 (${response.status})`);
+                    }
                 }
 
                 const data = await response.json();
                 files = Array.isArray(data) ? data.filter(item => item.type === 'file') : [];
                 renderGallery();
-                showToast('图库已刷新', 'info');
+                showToast(`✅ 加载成功！共 ${files.length} 个文件`, 'success');
             } catch (error) {
-                showToast(`加载失败: ${error.message}`, 'error');
+                console.error('Load error:', error);
+                showToast(`❌ ${error.message}`, 'error');
             }
         }
 
