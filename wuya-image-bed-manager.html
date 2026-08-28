@@ -465,11 +465,11 @@
     <script>
         // ==================== 【配置信息】请在这里修改为你的 GitHub 账户信息 ====================
         const CONFIG = {
-            username: 'yazi520',                              // GitHub 用户名
-            repository: 'wuya',                               // 仓库名
+            username: 'yazi520',                          // GitHub 用户名
+            repository: 'wuya',                           // 仓库名
             branch: 'main',
-            path: 'root',                                     // 文件夹路径（根目录为 /root）
-            baseUrl: 'https://yazi520.github.io/wuya/root'   // GitHub Pages 外链前缀
+            path: '',                                     // 根目录（空字符串）
+            baseUrl: 'https://yazi520.github.io/wuya'    // GitHub Pages 外链前缀
         };
 
         // ==================== 存储和状态管理 ====================
@@ -599,8 +599,7 @@
         }
 
         async function uploadToGithub(filename, base64, progressItem) {
-            const filePath = CONFIG.path ? `${CONFIG.path}/${filename}` : filename;
-            const url = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repository}/contents/${filePath}`;
+            const url = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repository}/contents/${filename}`;
             
             const payload = {
                 message: `Upload ${filename}`,
@@ -642,8 +641,7 @@
             }
 
             try {
-                const filePath = CONFIG.path ? CONFIG.path : '';
-                const url = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repository}/contents/${filePath}?ref=${CONFIG.branch}`;
+                const url = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repository}/contents?ref=${CONFIG.branch}`;
                 
                 const response = await fetch(url, {
                     headers: {
@@ -655,7 +653,7 @@
                     const errorData = await response.json();
                     
                     if (response.status === 404) {
-                        throw new Error(`路径不存在 (${CONFIG.username}/${CONFIG.repository}/${filePath})`);
+                        throw new Error(`仓库不存在或无权限访问 (${CONFIG.username}/${CONFIG.repository})`);
                     } else if (response.status === 401) {
                         throw new Error('Token 无效或已过期，请重新输入');
                     } else {
@@ -735,8 +733,7 @@
             }
 
             try {
-                const filePath = CONFIG.path ? `${CONFIG.path}/${filename}` : filename;
-                const url = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repository}/contents/${filePath}`;
+                const url = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repository}/contents/${filename}`;
                 const response = await fetch(url, {
                     method: 'DELETE',
                     headers: {
